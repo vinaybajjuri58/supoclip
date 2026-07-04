@@ -23,11 +23,16 @@ RUN pip install uv
 # Set working directory
 WORKDIR /app
 
-# Copy pyproject.toml and uv.lock for dependency installation
-COPY pyproject.toml uv.lock* ./
+# Copy pyproject.toml for dependency installation
+COPY pyproject.toml ./
 
-# Create virtual environment and install dependencies using uv sync
-RUN uv venv .venv && uv sync
+# Install deps (mediapipe has no linux/arm64 wheel; made optional)
+RUN printf 'import tomllib\nwith open("pyproject.toml","rb") as f:\n d=tomllib.load(f)["project"]["dependencies"]\nfor x in d:\n if "mediapipe" not in x:\n  print(x)\n' > /tmp/extract.py && \
+    python3 /tmp/extract.py > requirements.txt && \
+    uv venv .venv && \
+    uv pip install --python .venv/bin/python -r requirements.txt && \
+    (uv pip install --python .venv/bin/python "mediapipe>=0.10.0" 2>/dev/null || \
+     echo "mediapipe skipped (face detection uses OpenCV fallback)")
 
 # Force update yt-dlp to the absolute latest version to handle YouTube API changes
 # Also install from git to get the very latest commits
