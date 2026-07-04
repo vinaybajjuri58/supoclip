@@ -391,10 +391,7 @@ def get_transcript_agent() -> Agent[None, TranscriptAnalysis]:
             model=_build_transcript_model(runtime_config),
             output_type=TranscriptAnalysis,
             system_prompt=transcript_analysis_system_prompt,
-            # Some local Ollama/OpenAI-compatible endpoints can return formatted
-            # prose before settling on schema-valid JSON. Keep retries limited
-            # while still allowing enough repair attempts for local models.
-            output_retries=2 if provider == "ollama" else 2,
+            retries=2,
         )
         _transcript_agent_signature = signature
     return _transcript_agent
